@@ -1,12 +1,12 @@
 const router = require("express").Router();
-const { Post, User, Vote, Comment } = require("../../models");
 const sequelize = require("../../config/connections");
-const withAuth = require("../utils/auth");
+const { Post, User, Comment, Vote } = require("../../models");
+const withAuth = require("../../utils/auth");
 
-// GET all posts
+// get all users
 router.get("/", (req, res) => {
+  console.log("======================");
   Post.findAll({
-    // Query configurations
     attributes: [
       "id",
       "post_url",
@@ -19,7 +19,6 @@ router.get("/", (req, res) => {
         "vote_count",
       ],
     ],
-    order: [["created_at", "DESC"]],
     include: [
       {
         model: Comment,
@@ -42,7 +41,6 @@ router.get("/", (req, res) => {
     });
 });
 
-// GET one post
 router.get("/:id", (req, res) => {
   Post.findOne({
     where: {
@@ -77,7 +75,7 @@ router.get("/:id", (req, res) => {
   })
     .then((dbPostData) => {
       if (!dbPostData) {
-        res.status(404).json({ message: "No post found with this id." });
+        res.status(404).json({ message: "No post found with this id" });
         return;
       }
       res.json(dbPostData);
@@ -88,7 +86,6 @@ router.get("/:id", (req, res) => {
     });
 });
 
-// POST a new post
 router.post("/", withAuth, (req, res) => {
   // expects {title: 'Taskmaster goes public!', post_url: 'https://taskmaster.com/press', user_id: 1}
   Post.create({
@@ -103,25 +100,19 @@ router.post("/", withAuth, (req, res) => {
     });
 });
 
-// PUT /api/posts/upvote
 router.put("/upvote", withAuth, (req, res) => {
-  // make sure the session exists first
-  if (req.session) {
-    // pass session id along with all destructured properties on req.body
-    // custom static method created in models/Post.js
-    Post.upvote(
-      { ...req.body, user_id: req.session.user_id },
-      { Vote, Comment, User }
-    )
-      .then((updatedVoteData) => res.json(updatedVoteData))
-      .catch((err) => {
-        console.log(err);
-        res.status(400).json(err);
-      });
-  }
+  // custom static method created in models/Post.js
+  Post.upvote(
+    { ...req.body, user_id: req.session.user_id },
+    { Vote, Comment, User }
+  )
+    .then((updatedVoteData) => res.json(updatedVoteData))
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
-// PUT to update a post's title
 router.put("/:id", withAuth, (req, res) => {
   Post.update(
     {
@@ -134,8 +125,8 @@ router.put("/:id", withAuth, (req, res) => {
     }
   )
     .then((dbPostData) => {
-      if (!dbPostData[0]) {
-        res.status(404).json({ message: "No post found with this id." });
+      if (!dbPostData) {
+        res.status(404).json({ message: "No post found with this id" });
         return;
       }
       res.json(dbPostData);
@@ -146,8 +137,8 @@ router.put("/:id", withAuth, (req, res) => {
     });
 });
 
-// DELETE a post
 router.delete("/:id", withAuth, (req, res) => {
+  console.log("id", req.params.id);
   Post.destroy({
     where: {
       id: req.params.id,
@@ -155,7 +146,7 @@ router.delete("/:id", withAuth, (req, res) => {
   })
     .then((dbPostData) => {
       if (!dbPostData) {
-        res.status(404).json({ message: "No post found with this id." });
+        res.status(404).json({ message: "No post found with this id" });
         return;
       }
       res.json(dbPostData);
